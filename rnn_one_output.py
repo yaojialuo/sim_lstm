@@ -3,16 +3,26 @@ import numpy as np
 import random
 from random import shuffle
 import tensorflow as tf
+from tensorflow.python import debug as tf_debug
 
+# arr1=np.arange(12).reshape(2,2,3)
+# print(arr1)
+# t=arr1.transpose((2,1,0))
+# print(t,t.shape)#3,2,2
+# t2=t.transpose((1,0,2))#2,3,2
+# print(t2,t2.shape)
+#
+# quit()
 # from tensorflow.models.rnn import rnn_cell
 # from tensorflow.models.rnn import rnn
 
 NUM_EXAMPLES = 10000
 
 train_input = ['{0:020b}'.format(i) for i in range(2**20)]
-shuffle(train_input)
+#shuffle(train_input)
 train_input = [map(int,i) for i in train_input]
 ti  = []
+
 for i in train_input:
     temp_list = []
     for j in i:
@@ -33,13 +43,17 @@ test_input = train_input[NUM_EXAMPLES:]
 test_output = train_output[NUM_EXAMPLES:]
 train_input = train_input[:NUM_EXAMPLES]
 train_output = train_output[:NUM_EXAMPLES]
-
+print(train_input[1],train_output[1])
 print( "test and training data loaded" )
-
-data = tf.placeholder(tf.float32, [None, 20,1]) #Number of examples, number of input, dimension of each input
-target = tf.placeholder(tf.float32, [None, 1])
+#quit()
+# shape: (1000, 20, 1)
+data = tf.placeholder(tf.float32, [None, 20,1],"tf_data") #Number of examples, number of input, dimension of each input
+target = tf.placeholder(tf.float32, [None, 1],"tf_taget")
+data_id=tf.identity(data)
+target_id=tf.identity(target)
 num_hidden = 24
 cell = tf.contrib.rnn.LSTMCell(num_hidden,state_is_tuple=True)
+#cell = tf.contrib.rnn.BasicLSTMCell(num_hidden,state_is_tuple=True)
 val, _ = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
 val = tf.transpose(val, [1, 0, 2])
 last = tf.gather(val, int(val.get_shape()[0]) - 1)
@@ -60,13 +74,17 @@ sess.run(init_op)
 batch_size = 1000
 no_of_batches = int(len(train_input) / batch_size )
 epoch = 100
+debug_sess = tf_debug.LocalCLIDebugWrapperSession(sess=sess)
 for i in range(epoch):
     ptr = 0
     for j in range(no_of_batches):
         inp = train_input[ptr:ptr+batch_size]
         out = train_output[ptr:ptr+batch_size]
         ptr+=batch_size
-        sess.run(minimize,{data: inp, target: out})
+        #sess.run(minimize,{data: inp, target: out})
+        #debug_sess.run(minimize,{data: inp, target: out})
+
+        debug_sess.run([data_id,target_id],feed_dict={data: inp, target: out})
     print( "Epoch ",str(i) )
 
 incorrect = sess.run(error,{data: test_input, target: test_output})
